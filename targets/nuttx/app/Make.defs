@@ -1,0 +1,3 @@
+ifneq ($(CONFIG_EXAMPLES_PRINTFTEST),)
+CONFIGURED_APPS += $(APPDIR)/examples/printftest
+endif

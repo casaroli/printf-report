@@ -1,0 +1,3 @@
+config EXAMPLES_PRINTFTEST
+	tristate "printf conformance driver"
+	default n

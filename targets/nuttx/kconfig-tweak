@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+# Minimal stand-in for kconfig-frontends' kconfig-tweak (used by NuttX's
+# tools/sethost.sh and by targets/nuttx/build.sh).  Supports --file F and any
+# number of --enable/-e, --disable/-d, --undefine/-u, --set-str, --set-val.
+import re, sys
+a = sys.argv[1:]
+path, ops = ".config", []
+i = 0
+while i < len(a):
+    o = a[i]
+    if o == "--file": path = a[i + 1]; i += 2; continue
+    if o in ("--enable", "-e", "--disable", "-d", "--undefine", "-u"):
+        ops.append((o.lstrip("-")[0], a[i + 1], None)); i += 2; continue
+    if o in ("--set-str", "--set-val"):
+        ops.append((o, a[i + 1], a[i + 2])); i += 3; continue
+    sys.exit(f"kconfig-tweak: unsupported option {o}")
+lines = open(path).read().splitlines()
+for op, name, val in ops:
+    n = name if name.startswith("CONFIG_") else "CONFIG_" + name
+    pat = re.compile(rf"^({re.escape(n)}=|# {re.escape(n)} is not set$)")
+    new = {"e": f"{n}=y", "d": f"# {n} is not set", "u": None,
+           "--set-str": f'{n}="{val}"', "--set-val": f"{n}={val}"}[op]
+    out, done = [], False
+    for ln in lines:
+        if pat.match(ln):
+            if new is not None and not done: out.append(new)
+            done = True
+        else:
+            out.append(ln)
+    if not done and new is not None: out.append(new)
+    lines = out
+open(path, "w").write("\n".join(lines) + "\n")
